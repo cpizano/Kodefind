@@ -17,7 +17,6 @@ Notes:
 - Only x64 target is specified in the solution. Adding a 32-bit target should be easy.
 
 Todo:
-- Add version information to the binary
 - Recognize more common C++ extensions
 - Add some form of help
 - Add some form of configuration
