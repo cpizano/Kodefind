@@ -1,0 +1,11 @@
+Kodefind is a simple GUI tool to find and open C and C++ files.
+
+Its job is to quickly index the file names in a large repo, like say chrome. It can search-as-you-type over 40k files.
+
+To use:
+1- Run the exe, a dialog should show up
+2- Click on the 'dir' button, select a directory that has your code
+3- It will quickly index the directory and all subdirectories for .c, .cc, .cpp, .h files
+4- When done the other controls activate
+5- Type at least 3 letters on the top edit box, you should see results below
+6- Double click any file to open it on the default editor
