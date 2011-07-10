@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{8CDEE807-BC53-E450-C8B8-4DEBB66742D4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="res">
+      <UniqueIdentifier>{0479ad32-09e9-4f21-9d57-8dcbd6783872}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="kodefind.gyp" />
+    <ClInclude Include="src\target_version_win.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClCompile Include="src\gui_win.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClInclude Include="src\gui_win.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <None Include="res\icon1.ico">
+      <Filter>res</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\resource.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="src\kodefind.rc">
+      <Filter>src</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
