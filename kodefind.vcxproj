@@ -76,6 +76,9 @@
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
+    <Manifest>
+      <OutputManifestFile>$(IntDir)$(TargetName)$(TargetExt).embed.manifest</OutputManifestFile>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="res\icon1.ico" />
