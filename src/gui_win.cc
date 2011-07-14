@@ -1,3 +1,6 @@
+// Copyright (c) 2011 Carlos Pizano-Uribe
+// Please see the README file for attribution and license details.
+
 #include "target_version_win.h"
 #include "engine_v1_win.h"
 #include "resource.h"

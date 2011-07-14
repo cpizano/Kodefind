@@ -1,3 +1,6 @@
+// Copyright (c) 2011 Carlos Pizano-Uribe
+// Please see the README file for attribution and license details.
+
 #include "target_version_win.h"
 #include "engine_v1_win.h"
 
@@ -236,7 +239,7 @@ int V1CodeSearch::ProcessDir(const FILE_ID_BOTH_DIR_INFO* fbdi, size_t parent_di
         dir_name.append(fbdi->FileName, len);
         dirs_.push_back(dir_name);
       }
-    } else if (fbdi->FileAttributes == FILE_ATTRIBUTE_ARCHIVE) {
+    } else if (fbdi->FileAttributes & (FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_NORMAL)) {
       if (IgnoreFileName(fbdi->FileName, len)) {
         ++stats_.files_discarded;
       } else {
@@ -248,7 +251,7 @@ int V1CodeSearch::ProcessDir(const FILE_ID_BOTH_DIR_INFO* fbdi, size_t parent_di
       // Hidden files and directories.
       ++stats_.hidden_discarded;
     } else {
-      __debugbreak();
+      ::OutputDebugStringA("kodefind:weird FileAttributes\n"); 
     }
 
     if (!fbdi->NextEntryOffset) {
