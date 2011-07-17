@@ -115,7 +115,7 @@ class V1CodeSearch : public CodeSearch {
 public:
   V1CodeSearch();
   virtual int Index(const wchar_t* root_dir, Client* client) override;
-  virtual std::vector<std::wstring> Search(const wchar_t* txt) override;
+  virtual std::vector<std::wstring> Search(const wchar_t* txt, Options options) override;
   virtual std::vector<std::wstring> Continue() override;
 
 private:
@@ -147,13 +147,14 @@ private:
   };
 
   int ProcessDir(const FILE_ID_BOTH_DIR_INFO* fbdi, size_t parent_dir_ix);
-  std::vector<std::wstring> V1CodeSearch::SearchImpl(const wchar_t* txt, bool reset);
+  std::vector<std::wstring> V1CodeSearch::SearchImpl(const wchar_t* txt, bool reset, Options options);
 
   DirVect dirs_;
   FileNodes files_;
 
   FileNodes::const_iterator it_;
   std::wstring search_term_;
+  Options current_options_;
 
   Stats stats_;
 };
@@ -163,7 +164,7 @@ CodeSearch* CodeSearchFactory(const char* name) {
   return NULL;
 }
 
-V1CodeSearch::V1CodeSearch() {
+V1CodeSearch::V1CodeSearch() : current_options_(CodeSearch::None) {
   dirs_.reserve(200);
   files_.reserve(2000);
 }
@@ -265,39 +266,62 @@ int V1CodeSearch::ProcessDir(const FILE_ID_BOTH_DIR_INFO* fbdi, size_t parent_di
   return 0;
 }
 
-std::vector<std::wstring> V1CodeSearch::Search(const wchar_t* txt) {
-  return SearchImpl(txt, true);
+std::vector<std::wstring> V1CodeSearch::Search(const wchar_t* txt, Options options) {
+  return SearchImpl(txt, true, options);
 }
 
 std::vector<std::wstring> V1CodeSearch::Continue() {
-  return SearchImpl(NULL, false);
+  return SearchImpl(NULL, false, CodeSearch::None);
 }
 
-
-
-std::vector<std::wstring> V1CodeSearch::SearchImpl(const wchar_t* txt, bool reset) {
+std::vector<std::wstring> V1CodeSearch::SearchImpl(const wchar_t* txt, bool reset, Options options) {
 
   if (reset) {
     it_ = files_.begin();
     search_term_ = txt;
+    current_options_ = options;
   } else {
     txt = search_term_.c_str();
+    options = current_options_;
   }
 
   const FileNodes::const_iterator end = files_.end();
   std::vector<std::wstring> matches;
 
-  for (; it_ != end; ++it_) {
-    if (it_->name.find(txt) == std::string::npos)
-      continue;
-    // A match has been found.
-    std::wstring result(dirs_[it_->dir_ix]);
-    result.append(1, L'\\');
-    result.append(it_->name);
-    matches.push_back(result);
-    if (matches.size() == 25) {
-      return matches;
+  size_t len = wcslen(txt);
+
+  if (options == CodeSearch::BeginsWith) {
+    for (; it_ != end; ++it_) {
+      
+      if (it_->name[0] != txt[0])
+        continue;
+      if (0 != it_->name.find(txt, 0, len))
+        continue;
+      
+      // A match has been found.
+      std::wstring result(dirs_[it_->dir_ix]);
+      result.append(1, L'\\');
+      result.append(it_->name);
+      matches.push_back(result);
+      if (matches.size() == 25) {
+        return matches;
+      }
     }
+  } else if (options == CodeSearch::Substring) {
+    for (; it_ != end; ++it_) {
+      if (it_->name.find(txt) == std::string::npos)
+        continue;
+      // A match has been found.
+      std::wstring result(dirs_[it_->dir_ix]);
+      result.append(1, L'\\');
+      result.append(it_->name);
+      matches.push_back(result);
+      if (matches.size() == 25) {
+        return matches;
+      }
+    }
+  } else {
+    __debugbreak();
   }
 
   return matches;

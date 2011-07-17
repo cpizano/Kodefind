@@ -7,8 +7,9 @@
 class CodeSearch {
 public:
   enum Options {
-    Normal,
-    Last
+    None,
+    Substring,
+    BeginsWith
   };
 
   class Client {
@@ -18,7 +19,7 @@ public:
   };
 
   virtual int Index(const wchar_t* root_dir, Client* client) = 0;
-  virtual std::vector<std::wstring> Search(const wchar_t* txt) = 0;
+  virtual std::vector<std::wstring> Search(const wchar_t* txt, Options options) = 0;
   virtual std::vector<std::wstring> Continue() = 0;
 };
 

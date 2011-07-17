@@ -20,6 +20,8 @@ HANDLE      g_thrd = NULL;
 CodeSearch* g_cs   = NULL;
 VoVoWS      g_vovows;
 
+volatile long  g_mode = 0;
+
 void DeleteVoWStr(VoWStr* item) {
   delete item;
 }
@@ -103,8 +105,10 @@ DWORD WINAPI IndexSearchTreadProc(void* ctx) {
 }
 
 void CALLBACK ApcNewTextInput(ULONG_PTR ctx) {
+  CodeSearch::Options options =
+      (g_mode == 0) ? CodeSearch::Substring : CodeSearch::BeginsWith;
   wchar_t* txt = reinterpret_cast<wchar_t*>(ctx);
-  VoWStr* res = new VoWStr(g_cs->Search(txt));
+  VoWStr* res = new VoWStr(g_cs->Search(txt, options));
   delete txt;
   while (true) {
     if (res->empty()) {
@@ -159,6 +163,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 	  case WM_INITDIALOG: {
         g_dlg = hDlg;
         ::SetWindowTextW(hDlg, L"select source directory");
+        ::SetWindowTextW(::GetDlgItem(hDlg, IDC_BUTTON2), (g_mode == 0) ? L"s" : L"x");
 		    return static_cast<INT_PTR>(TRUE);
       }
 
@@ -172,6 +177,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 
     case WM_COMMAND:
       if (LOWORD(wParam) == IDC_BUTTON1) {
+        // The button to select directory to scan.
         std::wstring* dir_to_scan = new std::wstring;
         if (!SelectFolder(hDlg, dir_to_scan)) {
           delete dir_to_scan;
@@ -180,6 +186,11 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
         // Start a new thread and index the directory.
         ::EnableWindow(::GetDlgItem(hDlg, IDC_BUTTON1), FALSE);
         g_thrd = ::CreateThread(NULL, 0, IndexSearchTreadProc, dir_to_scan, 0, NULL);
+
+      } else if (LOWORD(wParam) == IDC_BUTTON2) {
+        // The buttons to select match mode.
+        g_mode = (g_mode == 0)? 1 : 0;
+        ::SetWindowTextW(::GetDlgItem(hDlg, IDC_BUTTON2), (g_mode == 0) ? L"s" : L"x");
 
       } else if (LOWORD(wParam) == IDC_EDIT1) {
         // Change on the edit control.
