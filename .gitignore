@@ -1,0 +1,5 @@
+tools/
+x64/
+ipch/
+*.user
+*.aps
