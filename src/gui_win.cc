@@ -26,6 +26,20 @@ void DeleteVoWStr(VoWStr* item) {
   delete item;
 }
 
+void OpenFileWithApplication(const std::wstring& file) {
+  ::ShellExecuteW(NULL, L"open", file.c_str(), NULL, NULL, SW_SHOW);
+}
+
+void OpenListitem(HWND list, int id) {
+  LVITEM item = {0};
+  item.mask = LVIF_PARAM;
+  item.iItem = id;
+  if (ListView_GetItem(list, &item)) {
+    std::wstring* file = reinterpret_cast<std::wstring*>(item.lParam);
+    OpenFileWithApplication(*file);
+  }
+}
+
 bool SelectFolder(HWND parent, std::wstring* path) {
   IFileDialog *fdia;
   IShellItem* item;
@@ -64,7 +78,7 @@ class Progress : public CodeSearch::Client {
       // Throttle the posted messages to about 10 per second.
       if (ctc - tc_ > 100) {
         tc_ = ctc;
-        ::PostMessageW(g_dlg, WM_USER+1, files, dirs);
+        ::PostMessageW(g_dlg, WM_APP+1, files, dirs);
       }
       return true;
     }
@@ -89,12 +103,12 @@ DWORD WINAPI IndexSearchTreadProc(void* ctx) {
   
   delete dir;
   if (rv != 0) {
-    ::PostMessageW(g_dlg, WM_USER + 2, rv, 0);
+    ::PostMessageW(g_dlg, WM_APP + 2, rv, 0);
     return 1;
   }
 
   // Done indexing, now wait for queries, or if the handle is signaled, exit.
-  ::PostMessageW(g_dlg, WM_USER + 2, 0, 0);
+  ::PostMessageW(g_dlg, WM_APP + 2, 0, 0);
   while (true) {
     DWORD v = ::WaitForSingleObjectEx(g_term, INFINITE, TRUE);
     if (WAIT_IO_COMPLETION != v)
@@ -115,7 +129,7 @@ void CALLBACK ApcNewTextInput(ULONG_PTR ctx) {
       delete res;
       return;
     }
-    ::PostMessageW(g_dlg, WM_USER + 3, reinterpret_cast<WPARAM>(res), 0);
+    ::PostMessageW(g_dlg, WM_APP + 3, reinterpret_cast<WPARAM>(res), 0);
     res = new VoWStr(g_cs->Continue());
   }
 }
@@ -146,15 +160,11 @@ bool DeleteAllListViewItems(HWND list) {
 }
 
 bool InitListViewColumns(HWND list) { 
-    LVCOLUMN lvc;
-    lvc.mask = LVCF_FMT | LVCF_WIDTH;
-    lvc.cx = 1000;
-    lvc.fmt = LVCFMT_LEFT;
-    return (ListView_InsertColumn(list, 0, &lvc) == -1)? false : true;
-}
-
-void OpenFileWithApplication(const std::wstring& file) {
-  ::ShellExecuteW(NULL, L"open", file.c_str(), NULL, NULL, SW_SHOW);
+  LVCOLUMN lvc;
+  lvc.mask = LVCF_FMT | LVCF_WIDTH;
+  lvc.cx = 1000;
+  lvc.fmt = LVCFMT_LEFT;
+  return (ListView_InsertColumn(list, 0, &lvc) == -1)? false : true;
 }
 
 INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -186,6 +196,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
         // Start a new thread and index the directory.
         ::EnableWindow(::GetDlgItem(hDlg, IDC_BUTTON1), FALSE);
         g_thrd = ::CreateThread(NULL, 0, IndexSearchTreadProc, dir_to_scan, 0, NULL);
+        ::SetWindowTextW(hDlg, L"*");
 
       } else if (LOWORD(wParam) == IDC_BUTTON2) {
         // The buttons to select match mode.
@@ -208,10 +219,26 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
             }
             break;
         }
+      } else if (LOWORD(wParam) == IDOK) {
+        // The user pressed enter in a control, we do different things
+        // depending on the control
+        HWND active_ctrl = ::GetFocus();
+        HWND list = ::GetDlgItem(hDlg, IDC_LIST1);
+        HWND edit = ::GetDlgItem(hDlg, IDC_EDIT1);
+        if (list == active_ctrl) {
+          int pos = ListView_GetNextItem(list, -1, LVNI_SELECTED);
+          if (pos != -1) {
+            OpenListitem(list, pos);
+          }
+        } else if (edit == active_ctrl) {
+          ListView_SetItemState(list, 0, LVIS_SELECTED | LVIS_FOCUSED, 0x000F );
+          PostMessage(hDlg, WM_NEXTDLGCTL, 0, 0L);
+        }
+        return TRUE ;
       }
       break;
 
-    case WM_USER + 1: {
+    case WM_APP + 1: {
         // Progess indexing files.
         wchar_t buf[30];
         ::wsprintfW(buf, L"files: %d dirs: %d", wParam, lParam);
@@ -219,7 +246,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
       }
       break;
 
-    case WM_USER + 2: {
+    case WM_APP + 2: {
          // Finished indexing files, or unrecoverable error.
         if (wParam == 0) {
           ::RegisterHotKey(hDlg, 0, MOD_WIN|MOD_NOREPEAT, 0x5A);
@@ -237,7 +264,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
       }
       break;
 
-    case WM_USER + 3: {
+    case WM_APP + 3: {
         // A set of results is available, insert them in the UI.
         VoWStr* matches = reinterpret_cast<VoWStr*>(wParam);
         InsertListViewItems(::GetDlgItem(hDlg, IDC_LIST1), matches);
@@ -258,18 +285,11 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
         } else if (hdr->code == LVN_ITEMACTIVATE) {
           // Item activated. (Double-clicked).
           NMITEMACTIVATE* nmia = reinterpret_cast<LPNMITEMACTIVATE>(lParam);
-          LVITEM item = {0};
-          item.mask = LVIF_PARAM;
-          item.iItem = nmia->iItem;
-          if (ListView_GetItem(nmia->hdr.hwndFrom, &item)) {
-            std::wstring* file = reinterpret_cast<std::wstring*>(item.lParam);
-            OpenFileWithApplication(*file);
-          }
-
+          OpenListitem(nmia->hdr.hwndFrom, nmia->iItem);
         }
       }
       break;
-  
+
     case WM_HOTKEY: {
         ::SetFocus(::GetDlgItem(hDlg, IDC_EDIT1));
         ::SetForegroundWindow(hDlg);

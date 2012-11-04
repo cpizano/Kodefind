@@ -35,18 +35,22 @@ namespace {
 
   FileType ClassifyFile(const wchar_t* name, size_t len) {
     size_t of = len - 1;
-    if ((len > 2) && (name[of] == L'h') && (name[of-1] == L'.'))
-      return kCpp;
+    if ((len > 2) && (name[of] == L'h') && (name[of-1] == L'.')) 
+      return kCpp;   // .h
     if ((len > 2) && (name[of] == L'c') && (name[of-1] == L'.'))
-      return kCpp;
+      return kCpp;   // .c
     if ((len > 3) && (name[of] == L'c') && (name[of-1] == L'c') && (name[of-2] == L'.'))
-      return kCpp;
+      return kCpp;   // .cc
+    if ((len > 3) && (name[of] == L'm') && (name[of-1] == L'm') && (name[of-2] == L'.'))
+      return kCpp;   // .mm
     if ((len > 4) && (name[of] == L'p') && (name[of-1] == L'p') && (name[of-2] == L'c') && (name[of-3] == L'.'))
-      return kCpp;
+      return kCpp;   // .cpp
+    if ((len > 4) && (name[of] == L'l') && (name[of-1] == L'd') && (name[of-2] == L'i') && (name[of-3] == L'.'))
+      return kCpp;   // .idl
     if ((len > 4) && (name[of] == L'p') && (name[of-1] == L'y') && (name[of-2] == L'g') && (name[of-3] == L'.'))
-      return kGyp;
-    if ((len > 5) && (name[of] == L'y') && (name[of-1] == L'p') && (name[of-2] == L'y') && (name[of-3] == L'g') && (name[of-4] == L'.'))
-      return kGyp;
+      return kGyp;   // .gyp
+    if ((len > 5) && (name[of] == L'i') && (name[of-1] == L'p') && (name[of-2] == L'y') && (name[of-3] == L'g') && (name[of-4] == L'.'))
+      return kGyp;   // .gypi
 
     return kUnknown;
   }
